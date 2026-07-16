@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Operations Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">&#9679;</span>
+        <h1>Cloud Operations Dashboard</h1>
+      </div>
+      <span id="deployment-status" class="badge badge-pending">Checking deployment&hellip;</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card-grid">
+      <div class="card">
+        <h2>Backend Health</h2>
+        <div id="health-indicator" class="status-indicator status-unknown">
+          <span class="dot"></span>
+          <span id="health-text">Checking&hellip;</span>
+        </div>
+        <p class="muted">Auto-refreshes every 10 seconds</p>
+        <p class="muted" id="health-timestamp">&nbsp;</p>
+      </div>
+
+      <div class="card">
+        <h2>Server Time</h2>
+        <p class="metric" id="server-time">--</p>
+        <p class="muted">Live UTC clock (browser)</p>
+      </div>
+
+      <div class="card">
+        <h2>API Response Status</h2>
+        <p class="metric" id="api-status">--</p>
+        <p class="muted" id="api-status-detail">No requests made yet</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>System Information</h2>
+      <table class="info-table">
+        <tbody>
+          <tr><th>Container Hostname</th><td id="info-hostname">--</td></tr>
+          <tr><th>Environment</th><td id="info-environment">--</td></tr>
+          <tr><th>Python Version</th><td id="info-python">--</td></tr>
+          <tr><th>Current Time</th><td id="info-time">--</td></tr>
+          <tr><th>Request Count</th><td id="info-requests">--</td></tr>
+          <tr><th>Uptime</th><td id="info-uptime">--</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>API Test Console</h2>
+      <p class="muted">Exercise each backend endpoint through the frontend proxy.</p>
+      <div class="button-row">
+        <button type="button" data-endpoint="/api/health">GET /health</button>
+        <button type="button" data-endpoint="/api/info">GET /info</button>
+        <button type="button" data-endpoint="/api/time">GET /time</button>
+        <button type="button" data-endpoint="/api/metrics">GET /metrics</button>
+      </div>
+      <pre id="api-response" class="response-box">Click a button above to test an endpoint&hellip;</pre>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Cloud Operations Dashboard &mdash; demo workload for AWS ECS Fargate, ALB, and CloudWatch</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

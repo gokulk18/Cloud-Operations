@@ -1,0 +1,16 @@
+{
+  "name": "cloud-ops-dashboard-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for the Cloud Operations Dashboard - Express static server with a server-side proxy to the Flask backend",
+  "main": "app.js",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

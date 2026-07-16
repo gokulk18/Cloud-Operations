@@ -1,0 +1,63 @@
+version: "3.9"
+
+# Local development/demo stack mirroring the two ECS services this project
+# ships to production: "frontend" (Express + static dashboard) and "backend"
+# (Flask REST API). Configuration is entirely environment-variable driven so
+# these same images run unmodified in ECS Fargate task definitions.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: cloud-ops-dashboard-backend:local
+    container_name: cloud-ops-backend
+    environment:
+      API_PORT: "5000"
+      ENVIRONMENT: "production"
+      APP_NAME: "Cloud Operations Dashboard"
+      LOG_LEVEL: "INFO"
+    ports:
+      - "5000:5000"
+    networks:
+      - cloud-ops-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: cloud-ops-dashboard-frontend:local
+    container_name: cloud-ops-frontend
+    environment:
+      API_PORT: "3000"
+      ENVIRONMENT: "production"
+      APP_NAME: "Cloud Operations Dashboard"
+      # Service discovery in this compose network is by service name; in ECS
+      # this becomes the backend service's Cloud Map / internal ALB DNS name.
+      BACKEND_URL: "http://backend:5000"
+      LOG_LEVEL: "info"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cloud-ops-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+networks:
+  cloud-ops-net:
+    driver: bridge
