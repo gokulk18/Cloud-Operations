@@ -28,3 +28,8 @@ variable "private_subnet_cidrs" {
   description = "A list of CIDR blocks for the private subnets, one per subnet."
   type        = list(string)
 }
+
+variable "application_port" {
+  description = "The TCP port the ECS Fargate application listens on. The ALB forwards traffic to ECS tasks on this port."
+  type        = number
+}
