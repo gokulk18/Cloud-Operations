@@ -62,10 +62,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # terraform_wrapper: false is required here - the default wrapper
+      # script mishandles the exit code 2 that `terraform plan
+      # -detailed-exitcode` deliberately returns for "success, with
+      # changes," misreporting it as a failed step even though the plan
+      # itself succeeded. Using the raw binary avoids that entirely.
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
 
       # Authenticate to AWS using GitHub OIDC - no AWS access keys exist
       # anywhere in this workflow. Required before terraform init, since
@@ -189,10 +195,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # terraform_wrapper: false is required here - the default wrapper
+      # script mishandles the exit code 2 that `terraform plan
+      # -detailed-exitcode` deliberately returns for "success, with
+      # changes," misreporting it as a failed step even though the plan
+      # itself succeeded. Using the raw binary avoids that entirely.
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
