@@ -51,6 +51,16 @@ resource "aws_security_group" "ecs" {
     security_groups = [aws_security_group.alb.id]
   }
 
+  # Self-referencing rule: only things already in THIS security group (the
+  # frontend and backend both use it) can reach the backend's port - the
+  # ALB, and everything else, still cannot.
+  ingress {
+    description = "Allow internal service-to-service traffic (e.g. frontend to backend) via Service Connect"
+    from_port   = var.backend_port
+    to_port     = var.backend_port
+    protocol    = "tcp"
+    self        = true
+  }
 
   egress {
     description = "Allow all outbound traffic"

@@ -79,6 +79,7 @@ resource "aws_ecs_task_definition" "app" {
 
       portMappings = [
         {
+          name          = var.service_connect_port_name
           containerPort = var.container_port
           protocol      = "tcp"
         }
@@ -107,9 +108,10 @@ resource "aws_ecs_task_definition" "app" {
 # Resource: ECS Service
 # -----------------------------------------------------------------------------
 # Keeps the desired number of tasks running, places them in the private
-# subnets with no public IP, and registers them into the ALB target group.
-# The ALB's own health check (configured in the alb module) determines
-# whether a task receives traffic - this resource doesn't define its own.
+# subnets with no public IP, and (when target_group_arn is supplied)
+# registers them into the ALB target group. Also joins the shared Service
+# Connect namespace, which is how OTHER services (like the frontend calling
+# the backend) reach this one by a short name instead of an IP address.
 resource "aws_ecs_service" "app" {
   name             = "${local.name_prefix}-service"
   cluster          = aws_ecs_cluster.main.id
@@ -124,10 +126,35 @@ resource "aws_ecs_service" "app" {
     assign_public_ip = false
   }
 
-  load_balancer {
-    target_group_arn = var.target_group_arn
-    container_name   = var.container_name
-    container_port   = var.container_port
+  # Only emitted when target_group_arn is actually set - internal services
+  # with no ALB routing (like the backend) skip this block entirely rather
+  # than registering with a target group that has nothing to do with them.
+  dynamic "load_balancer" {
+    for_each = var.target_group_arn != null ? [var.target_group_arn] : []
+    content {
+      target_group_arn = load_balancer.value
+      container_name   = var.container_name
+      container_port   = var.container_port
+    }
+  }
+
+  # Registers this service in the shared namespace under
+  # service_connect_port_name, so other Service-Connect-enabled services can
+  # reach it at http://<service_connect_port_name>:<container_port> - no
+  # hardcoded IPs, no separate DNS records to manage by hand.
+  service_connect_configuration {
+    enabled   = true
+    namespace = var.service_connect_namespace_arn
+
+    service {
+      port_name      = var.service_connect_port_name
+      discovery_name = var.service_connect_port_name
+
+      client_alias {
+        port     = var.container_port
+        dns_name = var.service_connect_port_name
+      }
+    }
   }
 
   deployment_controller {

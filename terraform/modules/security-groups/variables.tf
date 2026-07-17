@@ -19,3 +19,8 @@ variable "application_port" {
   description = "The TCP port the ECS Fargate application listens on. The ALB forwards traffic to ECS tasks on this port."
   type        = number
 }
+
+variable "backend_port" {
+  description = "The TCP port the internal backend service listens on. Only reachable from other members of the same ECS security group (e.g. the frontend), never from the ALB."
+  type        = number
+}

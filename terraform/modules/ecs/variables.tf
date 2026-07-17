@@ -27,8 +27,9 @@ variable "ecs_security_group_id" {
 }
 
 variable "target_group_arn" {
-  description = "The ARN of the existing ALB target group the ECS service registers its tasks into."
+  description = "The ARN of the existing ALB target group the ECS service registers its tasks into. Optional - omit for internal services (like a backend API) that the ALB never routes to directly."
   type        = string
+  default     = null
 }
 
 variable "task_execution_role_arn" {
@@ -64,4 +65,14 @@ variable "cpu" {
 variable "memory" {
   description = "The amount of memory (in MiB) to reserve for the task (e.g. 512)."
   type        = number
+}
+
+variable "service_connect_namespace_arn" {
+  description = "The ARN of the Cloud Map HTTP namespace this service joins for ECS Service Connect - lets other services in the namespace reach it by short name."
+  type        = string
+}
+
+variable "service_connect_port_name" {
+  description = "The short name this service is reachable at within the Service Connect namespace, e.g. \"backend\". Other services reach it via http://<this-name>:<container_port>."
+  type        = string
 }

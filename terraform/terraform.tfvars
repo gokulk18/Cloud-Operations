@@ -35,3 +35,10 @@ memory = 512
 min_capacity           = 1
 max_capacity           = 4
 target_cpu_utilization = 60
+
+# The backend Flask API - reachable only from the frontend, over Service
+# Connect, never directly from the ALB. 5000 matches backend/app.py's
+# default API_PORT (see project/backend/Dockerfile).
+backend_image_ssm_parameter_name = "/ecs/backend-image-uri"
+backend_container_name           = "backend"
+backend_container_port           = 5000

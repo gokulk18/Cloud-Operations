@@ -68,3 +68,18 @@ variable "target_cpu_utilization" {
   description = "The target average CPU utilization percentage the Auto Scaling policy tries to maintain."
   type        = number
 }
+
+variable "backend_image_ssm_parameter_name" {
+  description = "The name of the SSM Parameter Store parameter holding the backend container image URI, e.g. /ecs/backend-image-uri."
+  type        = string
+}
+
+variable "backend_container_name" {
+  description = "The name of the backend container within its ECS task definition."
+  type        = string
+}
+
+variable "backend_container_port" {
+  description = "The TCP port the backend container listens on."
+  type        = number
+}
