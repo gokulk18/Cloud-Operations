@@ -9,18 +9,41 @@ name: Infrastructure Pipeline
 # and whether to plan, apply, or destroy.
 
 on:
-  pull_request:
-    branches: ["main"]
-    paths:
-      - "terraform/modules/**"
-      - "live/**"
-      - ".github/workflows/terraform.yml"
+  # Push branch strategy: main is the deploy branch; feature/bugfix branches
+  # get plan-only feedback on every push (read-only, safe, no approval
+  # needed to run); release/** is included for teams that cut release
+  # branches before merging to main. Only main can ever reach the gated
+  # apply job below - see that job's `if:` condition.
   push:
-    branches: ["main"]
-    paths:
-      - "terraform/modules/**"
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+      - "release/**"
+    paths: &infra_paths
+      # Every Terraform module (terraform/modules/**/*.tf) and every
+      # Terragrunt config (live/**/*.hcl, including terragrunt.hcl,
+      # common.hcl, account.hcl, region.hcl at any depth). Scoped to these
+      # two real directories rather than repo-wide *.tf/*.hcl wildcards, so
+      # an unrelated file that happens to share an extension elsewhere in
+      # the repo can never accidentally trigger an infrastructure run.
+      - "terraform/**"
       - "live/**"
+      # Negation applied last within the same list - excludes markdown
+      # even if docs are ever added inside these directories later.
+      - "!**/*.md"
+      # Re-run this workflow when its own definition changes, so a broken
+      # pipeline change (like the -destroy fix above) gets validated by
+      # itself on the next push.
       - ".github/workflows/terraform.yml"
+  # pull_request's `branches` filters on the PR's BASE (target) branch, not
+  # the source branch - feature/bugfix branches are normally the source of
+  # a PR, not its target, so they're intentionally absent here.
+  pull_request:
+    branches:
+      - main
+      - "release/**"
+    paths: *infra_paths
   workflow_dispatch:
     inputs:
       account:
@@ -168,16 +191,19 @@ jobs:
   # ---------------------------------------------------------------------------
   # Job: Apply
   # ---------------------------------------------------------------------------
-  # Never runs for pull requests. Runs on every push to main (always
-  # "apply"), or on a manual dispatch where action is "apply" or "destroy".
-  # Gated by the "production" GitHub Environment - pauses here until a
-  # required reviewer approves, in the GitHub UI, before any real change
-  # happens.
+  # Never runs for pull requests. Runs on pushes to main specifically (not
+  # feature/bugfix/release, even though those branches now reach the plan
+  # job above), or on a manual dispatch where action is "apply" or
+  # "destroy". Gated by the "production" GitHub Environment - pauses here
+  # until a required reviewer approves, in the GitHub UI, before any real
+  # change happens. That approval gate is a second, independent safety
+  # layer - this branch check is the first, and exists so a feature-branch
+  # push never even shows up as a pending production approval.
   apply:
     name: Terragrunt Apply
     needs: plan
     if: |
-      github.event_name == 'push' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'plan')
     runs-on: ubuntu-latest
     environment: production

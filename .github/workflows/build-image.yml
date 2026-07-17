@@ -8,8 +8,36 @@ name: Build and Push Docker Images
 # code changes.
 
 on:
+  # Push branch strategy matches terraform.yml: main and release/** are
+  # where a real push+SSM-update happens; feature/bugfix branches only get
+  # a build validation run (no push, no SSM mutation) - see the `if:`
+  # conditions on the publish-only steps below for why that split exists.
   push:
-    branches: ["main"]
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+      - "release/**"
+    paths: &app_paths
+      # Both application directories in full - covers each Dockerfile,
+      # package.json/package-lock.json, requirements.txt, and all source
+      # under them. Scoped to project/frontend and project/backend
+      # specifically (not a repo-wide Dockerfile* wildcard) so a Dockerfile
+      # added somewhere unrelated in the future can't accidentally trigger
+      # an image build.
+      - "project/frontend/**"
+      - "project/backend/**"
+      # Negation applied last within the same list - excludes
+      # project/README.md and any future docs nested under either app dir.
+      - "!project/**/*.md"
+      # Re-run this workflow when its own definition changes.
+      - ".github/workflows/build-image.yml"
+  # pull_request's `branches` filters on the PR's BASE (target) branch.
+  pull_request:
+    branches:
+      - main
+      - "release/**"
+    paths: *app_paths
   workflow_dispatch: {}
 
 # Minimum permissions this workflow actually needs - nothing broader.
@@ -29,6 +57,17 @@ jobs:
   build-and-push:
     name: Build, Push, and Publish Image URIs
     runs-on: ubuntu-latest
+
+    # True only for the pushes/dispatches that should actually publish: a
+    # push to main or a release/** branch, or any manual workflow_dispatch.
+    # False for pull_request (any base branch) and for pushes to
+    # feature/**/bugfix/** branches - those still get the build steps below
+    # (fast Dockerfile-builds-cleanly feedback), just never the
+    # login/push/AWS/SSM steps, which are gated on this below. This is what
+    # stops an ordinary PR from silently overwriting the production SSM
+    # image pointer.
+    env:
+      PUBLISH: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))) }}
 
     steps:
       # 1. Checkout Repository
@@ -52,8 +91,11 @@ jobs:
       # 4. Login to GitHub Container Registry
       # Uses the automatically issued GITHUB_TOKEN - no personal access
       # token or stored secret required. This is what the packages: write
-      # permission above actually authorizes.
+      # permission above actually authorizes. Skipped entirely when not
+      # publishing - pulling public base images for the build below needs
+      # no registry auth at all.
       - name: Log in to GitHub Container Registry
+        if: env.PUBLISH == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -61,6 +103,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # 5. Build Frontend Docker Image
+      # Always runs, including on pull requests and feature/bugfix pushes -
+      # this is the fast feedback that a Dockerfile change didn't break the
+      # build, without ever pushing anything anywhere.
       - name: Build frontend image
         run: |
           docker buildx build \
@@ -71,6 +116,7 @@ jobs:
 
       # 6. Push Frontend Image
       - name: Push frontend image
+        if: env.PUBLISH == 'true'
         run: docker push "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA"
 
       # 7. Build Backend Docker Image
@@ -84,12 +130,16 @@ jobs:
 
       # 8. Push Backend Image
       - name: Push backend image
+        if: env.PUBLISH == 'true'
         run: docker push "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA"
 
       # 9. Authenticate to AWS using GitHub OIDC - no AWS access keys exist
       # anywhere in this workflow. This exchanges a short-lived GitHub JWT
       # for temporary AWS credentials by assuming the existing IAM role.
+      # Skipped when not publishing - a PR build has no reason to touch AWS
+      # at all.
       - name: Configure AWS credentials (OIDC)
+        if: env.PUBLISH == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
@@ -99,7 +149,11 @@ jobs:
       # Overwrites the existing parameters with the image URIs just pushed
       # above - this is the handoff point the Terraform ECS module's
       # aws_ssm_parameter data source reads from at the next plan/apply.
+      # This is the step a naive "run on every PR" setup would have made
+      # dangerous: it repoints the LIVE production image, with no relation
+      # to whether the infra pipeline's own approval gate has run.
       - name: Update SSM parameter - frontend image URI
+        if: env.PUBLISH == 'true'
         run: |
           aws ssm put-parameter \
             --name "$SSM_FRONTEND_PARAM" \
@@ -108,6 +162,7 @@ jobs:
             --overwrite
 
       - name: Update SSM parameter - backend image URI
+        if: env.PUBLISH == 'true'
         run: |
           aws ssm put-parameter \
             --name "$SSM_BACKEND_PARAM" \
@@ -115,8 +170,23 @@ jobs:
             --type String \
             --overwrite
 
-      # 11. Display Final Image URIs
+      # 11a. Validation-only summary - the path every PR and feature/bugfix
+      # push actually takes. Makes it explicit in the job summary that
+      # nothing was pushed, so a reviewer never mistakes a green check for
+      # "this image is live."
+      - name: Display build validation summary
+        if: env.PUBLISH != 'true'
+        run: |
+          {
+            echo "### Build Validation Only"
+            echo ""
+            echo "Both Dockerfiles built successfully. No images were pushed and no SSM"
+            echo "parameters were updated (event: \`${{ github.event_name }}\`, ref: \`${{ github.ref }}\`)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 11b. Display Final Image URIs
       - name: Display final image URIs
+        if: env.PUBLISH == 'true'
         run: |
           echo "Frontend image: $REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA"
           echo "Backend image:  $REGISTRY/$IMAGE_REPO/backend:$GIT_SHA"
