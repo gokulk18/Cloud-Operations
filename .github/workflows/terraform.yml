@@ -115,9 +115,9 @@ jobs:
         run: |
           set -o pipefail
           if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
-            terragrunt run --all plan -destroy --non-interactive --terragrunt-non-interactive 2>&1 | tee plan_output.txt
+            terragrunt run --all plan -destroy --non-interactive 2>&1 | tee plan_output.txt
           else
-            terragrunt run --all plan --non-interactive --terragrunt-non-interactive 2>&1 | tee plan_output.txt
+            terragrunt run --all plan --non-interactive 2>&1 | tee plan_output.txt
           fi
 
       - name: Comment plan on pull request
@@ -214,9 +214,9 @@ jobs:
       - name: Terragrunt run --all apply or destroy
         run: |
           if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
-            terragrunt run --all destroy --non-interactive --terragrunt-non-interactive
+            terragrunt run --all destroy --non-interactive
           else
-            terragrunt run --all apply --non-interactive --terragrunt-non-interactive
+            terragrunt run --all apply --non-interactive
           fi
 
       - name: Display outputs
