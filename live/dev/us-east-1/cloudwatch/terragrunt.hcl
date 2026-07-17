@@ -16,7 +16,7 @@ terraform {
 
 dependency "ecs" {
   config_path                             = "../ecs"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     ecs_cluster_name = "mock-cluster"
     ecs_service_name = "mock-service"
@@ -25,7 +25,7 @@ dependency "ecs" {
 
 dependency "alb" {
   config_path                             = "../alb"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     alb_arn_suffix = "app/mock-alb/0000000000000000"
   }

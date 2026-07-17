@@ -16,7 +16,7 @@ terraform {
 
 dependency "ecs" {
   config_path                             = "../ecs"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     ecs_cluster_name = "mock-cluster"
     ecs_service_name = "mock-service"

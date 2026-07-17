@@ -22,7 +22,7 @@ terraform {
 
 dependency "vpc" {
   config_path                             = "../vpc"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     private_subnet_ids = ["subnet-00000000000000003", "subnet-00000000000000004"]
   }
@@ -30,7 +30,7 @@ dependency "vpc" {
 
 dependency "security" {
   config_path                             = "../security"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     ecs_security_group_id = "sg-00000000000000001"
   }
@@ -38,7 +38,7 @@ dependency "security" {
 
 dependency "iam" {
   config_path                             = "../iam"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     task_execution_role_arn = "arn:aws:iam::000000000000:role/mock-execution"
     task_role_arn            = "arn:aws:iam::000000000000:role/mock-task"
@@ -47,7 +47,7 @@ dependency "iam" {
 
 dependency "ssm_backend" {
   config_path                             = "../ssm-backend"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     image_uri = "ghcr.io/example/example:mock"
   }
@@ -55,7 +55,7 @@ dependency "ssm_backend" {
 
 dependency "service_discovery" {
   config_path                             = "../service-discovery"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     namespace_arn = "arn:aws:servicediscovery:us-east-1:000000000000:namespace/mock"
   }

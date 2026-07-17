@@ -16,7 +16,7 @@ terraform {
 
 dependency "vpc" {
   config_path                             = "../vpc"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     vpc_id            = "vpc-00000000000000000"
     public_subnet_ids = ["subnet-00000000000000001", "subnet-00000000000000002"]
@@ -25,7 +25,7 @@ dependency "vpc" {
 
 dependency "security" {
   config_path                             = "../security"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
   mock_outputs = {
     alb_security_group_id = "sg-00000000000000000"
   }
