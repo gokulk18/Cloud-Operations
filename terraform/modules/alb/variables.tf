@@ -1,11 +1,3 @@
-# modules/alb/variables.tf
-# -----------------------------------------------------------------------------
-# Inputs the alb module needs. vpc_id, public_subnet_ids, and
-# alb_security_group_id all come from resources created in OTHER modules
-# (vpc and security-groups) - this module never creates or looks them up
-# itself, it just consumes the IDs it's given.
-# -----------------------------------------------------------------------------
-
 variable "project_name" {
   description = "The name of the project. Used as a prefix on resource names and tags."
   type        = string

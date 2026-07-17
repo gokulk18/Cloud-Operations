@@ -17,3 +17,20 @@ private_subnet_cidrs = [
 
 
 application_port = 3000
+
+# The frontend image URI is published to this SSM parameter by the CI/CD
+# pipeline after each build - Terraform reads it at plan time instead of
+# hardcoding an image tag here.
+image_ssm_parameter_name = "/application/frontend-image"
+
+container_name = "frontend"
+
+# 256 CPU units (0.25 vCPU) / 512 MiB memory - smallest valid Fargate size,
+# sufficient for this lightweight demo app.
+cpu    = 256
+memory = 512
+
+# Auto scale between 1 and 4 tasks, targeting 60% average CPU utilization.
+min_capacity           = 1
+max_capacity           = 4
+target_cpu_utilization = 60

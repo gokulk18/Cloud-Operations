@@ -1,0 +1,221 @@
+name: Infrastructure Pipeline
+
+# Plans and applies the Terraform-managed AWS infrastructure. Pull requests
+# always get a plan-only run (for review, commented directly on the PR).
+# Pushes to main - and manual runs - plan, then pause for a required
+# approval (via the "production" GitHub Environment) before applying the
+# EXACT plan that was just generated, never a fresh one. workflow_dispatch
+# additionally allows a deliberate, equally approval-gated destroy.
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action to run"
+        type: choice
+        options: [plan, apply, destroy]
+        default: plan
+
+# Prevents two runs from racing to apply/destroy against the same state at
+# once. New runs queue behind an in-progress one rather than cancelling it -
+# cancelling mid-apply could leave infrastructure half-applied.
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TERRAFORM_VERSION: "1.12.2"
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_DEPLOY_ROLE_ARN: ${{ vars.TF_DEPLOY_ROLE_ARN }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job: Plan
+  # ---------------------------------------------------------------------------
+  # Always runs first, regardless of trigger. Produces a saved plan file
+  # (never applied by this job) and, on pull requests, posts its output as a
+  # PR comment for human review before anyone can merge.
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # actions/checkout only needs to read the repo
+      id-token: write # required for AWS OIDC (no access keys)
+      pull-requests: write # required to comment the plan on the PR
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      # Authenticate to AWS using GitHub OIDC - no AWS access keys exist
+      # anywhere in this workflow. Required before terraform init, since
+      # the S3 backend itself needs AWS credentials to read/lock state.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.TF_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Bucket/key/region/locking are all hardcoded directly in
+      # versions.tf's backend block, so init needs no -backend-config
+      # flags here - just the AWS credentials configured above.
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive -diff
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      # -detailed-exitcode gives three distinct outcomes instead of a
+      # plain success/fail: 0 = no changes, 1 = a real error, 2 = changes
+      # are present. That distinction is what lets the apply job below
+      # skip asking for approval when there is nothing to apply.
+      - name: Terraform plan
+        id: plan
+        run: |
+          set +e
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            terraform plan -destroy -out=tfplan -input=false -no-color -detailed-exitcode
+          else
+            terraform plan -out=tfplan -input=false -no-color -detailed-exitcode
+          fi
+          PLAN_EXIT_CODE=$?
+          set -e
+
+          if [ "$PLAN_EXIT_CODE" -eq 1 ]; then
+            echo "Terraform plan failed."
+            exit 1
+          fi
+
+          if [ "$PLAN_EXIT_CODE" -eq 2 ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload plan artifact
+        if: steps.plan.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: terraform/tfplan
+          retention-days: 5
+
+      - name: Render human-readable plan output
+        if: github.event_name == 'pull_request'
+        run: terraform show -no-color tfplan > plan_output.txt
+
+      - name: Comment plan on pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- terraform-plan-comment -->';
+            const maxLength = 60000;
+
+            let planText = fs.readFileSync('terraform/plan_output.txt', 'utf8');
+            if (planText.length > maxLength) {
+              planText = planText.substring(0, maxLength) + '\n... (truncated)';
+            }
+
+            const body = `${marker}\n### Terraform Plan\n\n\`\`\`\n${planText}\n\`\`\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  # ---------------------------------------------------------------------------
+  # Job: Apply
+  # ---------------------------------------------------------------------------
+  # Never runs for pull requests - only push-to-main or a manual dispatch.
+  # Skipped entirely if the plan found no changes. Gated by the
+  # "production" GitHub Environment: this job pauses here until one of that
+  # environment's required reviewers approves the run, in the GitHub UI.
+  apply:
+    name: Terraform Apply
+    needs: plan
+    if: github.event_name != 'pull_request' && needs.plan.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.TF_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: terraform
+
+      # Applies the EXACT plan reviewed above - never a fresh plan. No
+      # -auto-approve is needed: applying a saved plan file is already
+      # non-interactive, since the plan file itself is the approval
+      # artifact. This same command performs a destroy too, when the plan
+      # file above was generated with -destroy.
+      - name: Terraform apply
+        run: terraform apply -input=false -no-color tfplan
+
+      - name: Display outputs
+        run: terraform output -no-color

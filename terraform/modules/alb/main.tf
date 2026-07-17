@@ -1,23 +1,9 @@
-# modules/alb/main.tf
-# -----------------------------------------------------------------------------
-# Creates the Application Load Balancer, its Target Group, and the HTTP
-# Listener that connects them. The ECS service (a future module) will
-# register its tasks into the target group created here - this module has
-# no knowledge of ECS itself.
-# -----------------------------------------------------------------------------
 
-# A single shared prefix for naming and tagging, so it isn't repeated in
-# every resource block below.
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
-# -----------------------------------------------------------------------------
-# Resource: Application Load Balancer
-# -----------------------------------------------------------------------------
-# The internet-facing entry point to the application. It lives in the public
-# subnets (so it can reach, and be reached via, the Internet Gateway) and
-# uses the ALB security group created in the security-groups module.
+
 resource "aws_lb" "main" {
   name               = "${local.name_prefix}-alb"
   internal           = false
@@ -38,12 +24,7 @@ resource "aws_lb" "main" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Resource: Target Group
-# -----------------------------------------------------------------------------
-# A routable set of targets the ALB forwards traffic to and health-checks.
-# target_type = "ip" is required for ECS Fargate tasks, which have their own
-# elastic network interface rather than being registered as EC2 instances.
+
 resource "aws_lb_target_group" "app" {
   name        = "${local.name_prefix}-tg"
   port        = var.application_port
@@ -69,12 +50,7 @@ resource "aws_lb_target_group" "app" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Resource: HTTP Listener
-# -----------------------------------------------------------------------------
-# Listens on port 80 and forwards every request to the target group above.
-# The future ECS service doesn't need to know this exists - it only needs
-# the target group ARN to register its tasks into.
+
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
