@@ -111,11 +111,17 @@ jobs:
 
       # Plans every module in this account/region in dependency order.
       # Read-only - never applies anything.
+      #
+      # -destroy is a Terraform/OpenTofu plan flag, not a Terragrunt flag, so
+      # under Terragrunt's redesigned `run` CLI (1.x) it must be forwarded
+      # explicitly after `--`, or Terragrunt rejects it outright with
+      # "flag `-destroy` is not a Terragrunt flag". Terragrunt's own flags
+      # (--all, --non-interactive) still go before the `--`.
       - name: Terragrunt run --all plan
         run: |
           set -o pipefail
           if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
-            terragrunt run --all plan -destroy --non-interactive 2>&1 | tee plan_output.txt
+            terragrunt run --all --non-interactive -- plan -destroy 2>&1 | tee plan_output.txt
           else
             terragrunt run --all plan --non-interactive 2>&1 | tee plan_output.txt
           fi
