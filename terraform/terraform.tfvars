@@ -20,8 +20,9 @@ application_port = 3000
 
 # The frontend image URI is published to this SSM parameter by the CI/CD
 # pipeline after each build - Terraform reads it at plan time instead of
-# hardcoding an image tag here.
-image_ssm_parameter_name = "/application/frontend-image"
+# hardcoding an image tag here. Must match SSM_FRONTEND_PARAM in
+# .github/workflows/build-image.yml (the actual writer of this parameter).
+image_ssm_parameter_name = "/ecs/frontend-image-uri"
 
 container_name = "frontend"
 

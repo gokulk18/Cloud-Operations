@@ -35,7 +35,7 @@ variable "application_port" {
 }
 
 variable "image_ssm_parameter_name" {
-  description = "The name of the SSM Parameter Store parameter holding the container image URI to deploy, e.g. /application/frontend-image."
+  description = "The name of the SSM Parameter Store parameter holding the container image URI to deploy, e.g. /ecs/frontend-image-uri."
   type        = string
 }
 
