@@ -1,9 +1,11 @@
 # live/multi/account.hcl
 # -----------------------------------------------------------------------------
-# Account-specific values for the COLLEAGUE's AWS account. Replace both
-# placeholders below with real values before this account's configs can
-# actually be applied - I don't have access to your colleague's AWS
-# account, so these are intentionally marked, not guessed.
+# Account-specific values for the COLLEAGUE's AWS account (account ID
+# 416069842292). deployment_role_arn is the role created in that account
+# per the multi-account setup guide - its trust policy allows the dev
+# account's GitHub-Terraform-Deploy-Role (arn:aws:iam::902664897239:role/
+# GitHub-Terraform-Deploy-Role) to assume it, which is what Terragrunt's
+# generated provider.tf assume_role block actually does at plan/apply time.
 #
 # "multi" is used here exactly as named in the requested folder structure
 # - functionally this is simply "the second AWS account." Rename the
@@ -13,11 +15,7 @@
 
 locals {
   account_name = "multi"
-  account_id   = "<COLLEAGUE_ACCOUNT_ID>"
+  account_id   = "416069842292"
 
-  # Must exist in the colleague's account: an IAM role trusting your
-  # GitHub OIDC provider (or trusting the dev account's deployment role,
-  # if you prefer role-chaining instead of separate OIDC trust per
-  # account - both are valid, explained further down).
-  deployment_role_arn = "arn:aws:iam::<COLLEAGUE_ACCOUNT_ID>:role/TerraformDeployRole"
+  deployment_role_arn = "arn:aws:iam::416069842292:role/Github-Terraform-Deploy-Role"
 }
