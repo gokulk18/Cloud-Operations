@@ -170,6 +170,55 @@ jobs:
             --type String \
             --overwrite
 
+      # 10b. Second account sync (optional, off until configured)
+      # Mirrors the same image URIs into a second AWS account's SSM
+      # Parameter Store - e.g. a colleague's account running its own copy
+      # of this infrastructure via live/multi. Entirely inert until the
+      # AWS_ROLE_ARN_MULTI repository variable is actually set; until then
+      # every step below is skipped and this job behaves exactly as it did
+      # before this account existed.
+      #
+      # This performs a SECOND, chained sts:AssumeRole - not a second OIDC
+      # federation. The target role's trust policy only trusts THIS role
+      # (GitHub-ImageBuild-SSM-Role in the dev account) as its principal,
+      # never GitHub OIDC directly, exactly mirroring the two-hop pattern
+      # Terragrunt's generated provider.tf already uses for real
+      # infrastructure. configure-aws-credentials does this automatically:
+      # given a role-to-assume input and credentials already active in the
+      # environment (the dev-account hop above), it calls sts:AssumeRole
+      # using those, rather than requesting a fresh OIDC token.
+      - name: Configure AWS credentials for colleague account (second hop)
+        if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN_MULTI }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # SSM is account-scoped, so the colleague account needs its own copy
+      # of both parameters at the SAME paths live/multi/us-east-1/ssm and
+      # ssm-backend already read from (/ecs/frontend-image-uri,
+      # /ecs/backend-image-uri) - reusing SSM_FRONTEND_PARAM/
+      # SSM_BACKEND_PARAM here is correct precisely because those are just
+      # path strings, identical in both accounts; only the credentials
+      # (and therefore which account they resolve in) differ.
+      - name: Update colleague account SSM parameter - frontend image URI
+        if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
+        run: |
+          aws ssm put-parameter \
+            --name "$SSM_FRONTEND_PARAM" \
+            --value "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA" \
+            --type String \
+            --overwrite
+
+      - name: Update colleague account SSM parameter - backend image URI
+        if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
+        run: |
+          aws ssm put-parameter \
+            --name "$SSM_BACKEND_PARAM" \
+            --value "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA" \
+            --type String \
+            --overwrite
+
       # 11a. Validation-only summary - the path every PR and feature/bugfix
       # push actually takes. Makes it explicit in the job summary that
       # nothing was pushed, so a reviewer never mistakes a green check for
@@ -197,4 +246,10 @@ jobs:
             echo "|----------|-----------|"
             echo "| Frontend | \`$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA\` |"
             echo "| Backend  | \`$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA\` |"
+            echo ""
+            if [ -n "${{ vars.AWS_ROLE_ARN_MULTI }}" ]; then
+              echo "Also synced to the colleague account's SSM parameters."
+            else
+              echo "Colleague-account sync skipped: \`AWS_ROLE_ARN_MULTI\` is not set."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

@@ -10,10 +10,15 @@ locals {
   project_name = "cloud-ops-dashboard"
 
   # Reuses the same S3 bucket already created for the original terraform/
-  # project. The colleague account's deployment role needs a bucket policy
-  # on this bucket granting cross-account s3:GetObject/PutObject/
-  # ListBucket - no DynamoDB permissions needed, since locking is handled
-  # by the bucket itself (use_lockfile, in the root terragrunt.hcl).
+  # project. No cross-account bucket policy is needed for the colleague
+  # account: the remote_state block in live/terragrunt.hcl has no role_arn
+  # of its own, so state reads/writes always run under whichever
+  # credentials the pipeline already has active (the dev account's hub
+  # role, which owns this bucket) - the colleague account's
+  # deployment_role_arn is only ever used by the generated aws provider
+  # block, for actual resource operations, never for state. No DynamoDB
+  # permissions needed either, since locking is handled by the bucket
+  # itself (use_lockfile, in the root terragrunt.hcl).
   state_bucket = "cloud-ops-dashboard-tfstate-902664897239"
   state_region = "us-east-1"
 
