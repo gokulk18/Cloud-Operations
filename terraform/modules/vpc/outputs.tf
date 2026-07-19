@@ -1,8 +1,8 @@
-# modules/vpc/outputs.tf
-# -----------------------------------------------------------------------------
-# Exposes the IDs of resources created in main.tf so the root module (and
-# later, other modules) can reference them.
-# -----------------------------------------------------------------------------
+
+
+
+
+
 
 output "vpc_id" {
   description = "The ID of the VPC."

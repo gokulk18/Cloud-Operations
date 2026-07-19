@@ -1,7 +1,7 @@
-# live/dev/us-east-1/vpc/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# No dependencies - the root of the graph, same as in the real project.
-# -----------------------------------------------------------------------------
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()
@@ -13,9 +13,9 @@ locals {
   region_vars  = read_terragrunt_config(find_in_parent_folders("region.hcl"))
 }
 
-# Points DIRECTLY at the real, unmodified module - no copy, no
-# duplication. Four levels up (vpc -> us-east-1 -> dev -> live -> repo
-# root), then into terraform/modules/vpc.
+
+
+
 terraform {
   source = "../../../../terraform/modules/vpc"
 }

@@ -18,19 +18,19 @@ from datetime import datetime, timezone
 import psutil
 from flask import Flask, jsonify, request
 
-# ---------------------------------------------------------------------------
-# Configuration (all values sourced from environment variables - no
-# hardcoded hosts/ports so the same image works in any environment/region)
-# ---------------------------------------------------------------------------
+
+
+
+
 API_PORT = int(os.environ.get("API_PORT", "5000"))
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
 APP_NAME = os.environ.get("APP_NAME", "Cloud Operations Dashboard")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
-# ---------------------------------------------------------------------------
-# Structured (JSON-line) logging - plays nicely with CloudWatch Logs, which
-# indexes each log line as a discrete event.
-# ---------------------------------------------------------------------------
+
+
+
+
 logging.basicConfig(
     level=LOG_LEVEL,
     format=(
@@ -43,11 +43,11 @@ logger = logging.getLogger(APP_NAME)
 
 app = Flask(__name__)
 
-# ---------------------------------------------------------------------------
-# In-memory, process-local state. The app stores no data on disk and no
-# shared/session state, so any number of Fargate tasks can run concurrently
-# behind the ALB (horizontally scalable, stateless).
-# ---------------------------------------------------------------------------
+
+
+
+
+
 START_TIME = time.time()
 _request_count = 0
 _request_count_lock = threading.Lock()
@@ -69,9 +69,9 @@ def _format_uptime(seconds: float) -> str:
     return f"{hours}h {minutes}m {secs}s"
 
 
-# ---------------------------------------------------------------------------
-# Request/response logging hooks
-# ---------------------------------------------------------------------------
+
+
+
 @app.before_request
 def _log_incoming_request():
     _increment_request_count()
@@ -100,9 +100,9 @@ def _handle_unexpected_error(error):
     return jsonify(error="Internal Server Error"), 500
 
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
+
+
+
 @app.route("/")
 def root():
     """Basic liveness/identity endpoint."""
@@ -161,7 +161,7 @@ def metrics():
 
 
 if __name__ == "__main__":
-    # Local/dev convenience only - production runs via Gunicorn (see Dockerfile).
+
     logger.info(
         "Starting %s in %s mode on port %s (dev server)",
         APP_NAME,

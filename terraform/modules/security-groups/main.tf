@@ -11,14 +11,14 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Uncomment once an ACM certificate and HTTPS listener are added to the ALB.
-  # ingress {
-  #   description = "Allow HTTPS from the internet"
-  #   from_port   = 443
-  #   to_port     = 443
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"]
-  # }
+
+
+
+
+
+
+
+
 
 
   egress {
@@ -51,9 +51,9 @@ resource "aws_security_group" "ecs" {
     security_groups = [aws_security_group.alb.id]
   }
 
-  # Self-referencing rule: only things already in THIS security group (the
-  # frontend and backend both use it) can reach the backend's port - the
-  # ALB, and everything else, still cannot.
+
+
+
   ingress {
     description = "Allow internal service-to-service traffic (e.g. frontend to backend) via Service Connect"
     from_port   = var.backend_port

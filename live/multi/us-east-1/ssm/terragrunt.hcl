@@ -1,9 +1,9 @@
-# live/dev/us-east-1/ssm/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# Reads the frontend image URI at plan time. No dependencies of its own -
-# ECS depends on THIS module's output (corrected from the request's
-# "SSM depends on ECS" - see explanation above).
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()

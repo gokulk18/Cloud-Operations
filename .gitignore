@@ -20,3 +20,4 @@ venv/
 *.tfstate.*
 crash.log
 crash.*.log
+.py

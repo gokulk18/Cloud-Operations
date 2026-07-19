@@ -1,10 +1,10 @@
-# modules/autoscaling/variables.tf
-# -----------------------------------------------------------------------------
-# Inputs the autoscaling module needs. ecs_cluster_name and ecs_service_name
-# (not ARNs) are required here specifically because Application Auto
-# Scaling identifies an ECS service by a resource ID built from its cluster
-# and service NAMES, not its ARN.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 variable "project_name" {
   description = "The name of the project. Used as a prefix on resource names and tags."

@@ -1,19 +1,19 @@
 name: Infrastructure Pipeline
 
-# Plans and applies the Terragrunt-orchestrated AWS infrastructure. Terraform
-# itself is only used internally, by Terragrunt - this workflow never calls
-# `terraform` directly. Pull requests get a plan-only run, commented on the
-# PR. Pushes to main - and manual runs - plan, then pause for a required
-# approval (via the "production" GitHub Environment) before applying.
-# workflow_dispatch additionally lets you pick which AWS account to target
-# and whether to plan, apply, or destroy.
+
+
+
+
+
+
+
 
 on:
-  # Push branch strategy: main is the deploy branch; feature/bugfix branches
-  # get plan-only feedback on every push (read-only, safe, no approval
-  # needed to run); release/** is included for teams that cut release
-  # branches before merging to main. Only main can ever reach the gated
-  # apply job below - see that job's `if:` condition.
+
+
+
+
+
   push:
     branches:
       - main
@@ -21,24 +21,24 @@ on:
       - "bugfix/**"
       - "release/**"
     paths: &infra_paths
-      # Every Terraform module (terraform/modules/**/*.tf) and every
-      # Terragrunt config (live/**/*.hcl, including terragrunt.hcl,
-      # common.hcl, account.hcl, region.hcl at any depth). Scoped to these
-      # two real directories rather than repo-wide *.tf/*.hcl wildcards, so
-      # an unrelated file that happens to share an extension elsewhere in
-      # the repo can never accidentally trigger an infrastructure run.
+
+
+
+
+
+
       - "terraform/**"
       - "live/**"
-      # Negation applied last within the same list - excludes markdown
-      # even if docs are ever added inside these directories later.
+
+
       - "!**/*.md"
-      # Re-run this workflow when its own definition changes, so a broken
-      # pipeline change (like the -destroy fix above) gets validated by
-      # itself on the next push.
+
+
+
       - ".github/workflows/terraform.yml"
-  # pull_request's `branches` filters on the PR's BASE (target) branch, not
-  # the source branch - feature/bugfix branches are normally the source of
-  # a PR, not its target, so they're intentionally absent here.
+
+
+
   pull_request:
     branches:
       - main
@@ -57,9 +57,9 @@ on:
         options: [plan, apply, destroy]
         default: plan
 
-# Keyed on account AND ref, so a dev run and a multi run can proceed
-# independently, but two runs against the SAME account queue behind each
-# other instead of racing.
+
+
+
 concurrency:
   group: terragrunt-${{ github.event.inputs.account || 'dev' }}-${{ github.ref }}
   cancel-in-progress: false
@@ -70,16 +70,16 @@ env:
   TERRAGRUNT_VERSION: "1.1.1"
   AWS_REGION: ${{ vars.AWS_REGION }}
   TF_DEPLOY_ROLE_ARN: ${{ vars.TF_DEPLOY_ROLE_ARN }}
-  # push events have no workflow_dispatch inputs at all - default to dev.
+
   ACCOUNT: ${{ github.event.inputs.account || 'dev' }}
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Job: Plan
-  # ---------------------------------------------------------------------------
-  # Always runs first. Plans every module in the selected account/region in
-  # dependency order (Terragrunt's run --all), and on pull requests, posts
-  # the combined output as a PR comment.
+
+
+
+
+
+
   plan:
     name: Terragrunt Plan
     runs-on: ubuntu-latest
@@ -94,19 +94,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # terraform_wrapper: false - same reason as before: Terragrunt shells
-      # out to the real terraform binary, and the wrapper's exit-code
-      # handling causes confusing false negatives that have nothing to do
-      # with Terragrunt itself.
+
+
+
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
           terraform_wrapper: false
 
-      # Installed directly from GitHub Releases rather than a third-party
-      # setup action, so the exact install mechanism is fully known and
-      # under version control here.
+
+
+
       - name: Install Terragrunt
         run: |
           curl -sL -o /usr/local/bin/terragrunt \
@@ -114,12 +114,12 @@ jobs:
           chmod +x /usr/local/bin/terragrunt
           terragrunt --version
 
-      # Authenticate to AWS using GitHub OIDC - no access keys anywhere in
-      # this workflow. This is the FIRST of two role-assumption hops: this
-      # step assumes TF_DEPLOY_ROLE_ARN directly; Terragrunt's generated
-      # provider.tf then assumes the SAME (or, for other accounts, a
-      # different) role a second time via account.hcl's deployment_role_arn
-      # - which is why the role's trust policy also trusts itself.
+
+
+
+
+
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -132,14 +132,14 @@ jobs:
       - name: Terragrunt run --all validate
         run: terragrunt run --all validate --non-interactive
 
-      # Plans every module in this account/region in dependency order.
-      # Read-only - never applies anything.
-      #
-      # -destroy is a Terraform/OpenTofu plan flag, not a Terragrunt flag, so
-      # under Terragrunt's redesigned `run` CLI (1.x) it must be forwarded
-      # explicitly after `--`, or Terragrunt rejects it outright with
-      # "flag `-destroy` is not a Terragrunt flag". Terragrunt's own flags
-      # (--all, --non-interactive) still go before the `--`.
+
+
+
+
+
+
+
+
       - name: Terragrunt run --all plan
         run: |
           set -o pipefail
@@ -188,17 +188,17 @@ jobs:
               });
             }
 
-  # ---------------------------------------------------------------------------
-  # Job: Apply
-  # ---------------------------------------------------------------------------
-  # Never runs for pull requests. Runs on pushes to main specifically (not
-  # feature/bugfix/release, even though those branches now reach the plan
-  # job above), or on a manual dispatch where action is "apply" or
-  # "destroy". Gated by the "production" GitHub Environment - pauses here
-  # until a required reviewer approves, in the GitHub UI, before any real
-  # change happens. That approval gate is a second, independent safety
-  # layer - this branch check is the first, and exists so a feature-branch
-  # push never even shows up as a pending production approval.
+
+
+
+
+
+
+
+
+
+
+
   apply:
     name: Terragrunt Apply
     needs: plan
@@ -239,10 +239,10 @@ jobs:
       - name: Terragrunt run --all init
         run: terragrunt run --all init --non-interactive
 
-      # run --all destroy automatically reverses the dependency graph
-      # (cloudwatch/autoscaling before ecs before alb before security
-      # before vpc) - no manual ordering needed, Terragrunt derives it from
-      # the same dependency blocks used for apply.
+
+
+
+
       - name: Terragrunt run --all apply or destroy
         run: |
           if [ "${{ github.event.inputs.action }}" = "destroy" ]; then

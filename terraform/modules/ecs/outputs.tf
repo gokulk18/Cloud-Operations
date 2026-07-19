@@ -1,11 +1,11 @@
-# modules/ecs/outputs.tf
-# -----------------------------------------------------------------------------
-# Exposes cluster/service/task-definition identifiers for anything that
-# integrates with this module later - Auto Scaling (needs the cluster and
-# service names), CloudWatch Alarms (needs the service/cluster names), and
-# the GitHub Actions deployment pipeline (needs the task definition family
-# to register new revisions against).
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 output "ecs_cluster_id" {
   description = "The ID of the ECS cluster."

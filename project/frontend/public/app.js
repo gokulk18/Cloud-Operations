@@ -1,12 +1,7 @@
 'use strict';
 
-/**
- * Cloud Operations Dashboard - browser-side controller.
- *
- * All requests go to same-origin "/api/*" routes served by the Express
- * frontend, which proxies them to the Flask backend. Nothing here talks to
- * the backend directly, so no backend URL is ever exposed to the client.
- */
+*
+
 
 const HEALTH_REFRESH_INTERVAL_MS = 10000;
 

@@ -1,9 +1,9 @@
 version: "3.9"
 
-# Local development/demo stack mirroring the two ECS services this project
-# ships to production: "frontend" (Express + static dashboard) and "backend"
-# (Flask REST API). Configuration is entirely environment-variable driven so
-# these same images run unmodified in ECS Fargate task definitions.
+
+
+
+
 
 services:
   backend:
@@ -39,8 +39,8 @@ services:
       API_PORT: "3000"
       ENVIRONMENT: "production"
       APP_NAME: "Cloud Operations Dashboard"
-      # Service discovery in this compose network is by service name; in ECS
-      # this becomes the backend service's Cloud Map / internal ALB DNS name.
+
+
       BACKEND_URL: "http://backend:5000"
       LOG_LEVEL: "info"
     ports:

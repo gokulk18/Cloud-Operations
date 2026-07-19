@@ -1,17 +1,17 @@
 name: Build and Push Docker Images
 
-# Builds the frontend and backend Docker images from their existing
-# multi-stage Dockerfiles, tags each with the Git commit SHA (never
-# "latest"), pushes them to GitHub Container Registry, and updates the SSM
-# parameters the Terraform ECS module reads at plan time - so shipping a
-# new image is just "push to main," with no manual steps and no Terraform
-# code changes.
+
+
+
+
+
+
 
 on:
-  # Push branch strategy matches terraform.yml: main and release/** are
-  # where a real push+SSM-update happens; feature/bugfix branches only get
-  # a build validation run (no push, no SSM mutation) - see the `if:`
-  # conditions on the publish-only steps below for why that split exists.
+
+
+
+
   push:
     branches:
       - main
@@ -19,20 +19,20 @@ on:
       - "bugfix/**"
       - "release/**"
     paths: &app_paths
-      # Both application directories in full - covers each Dockerfile,
-      # package.json/package-lock.json, requirements.txt, and all source
-      # under them. Scoped to project/frontend and project/backend
-      # specifically (not a repo-wide Dockerfile* wildcard) so a Dockerfile
-      # added somewhere unrelated in the future can't accidentally trigger
-      # an image build.
+
+
+
+
+
+
       - "project/frontend/**"
       - "project/backend/**"
-      # Negation applied last within the same list - excludes
-      # project/README.md and any future docs nested under either app dir.
+
+
       - "!project/**/*.md"
-      # Re-run this workflow when its own definition changes.
+
       - ".github/workflows/build-image.yml"
-  # pull_request's `branches` filters on the PR's BASE (target) branch.
+
   pull_request:
     branches:
       - main
@@ -40,11 +40,11 @@ on:
     paths: *app_paths
   workflow_dispatch: {}
 
-# Minimum permissions this workflow actually needs - nothing broader.
+
 permissions:
-  contents: read # actions/checkout only needs to read the repo
-  packages: write # required to push images to GHCR
-  id-token: write # required for AWS OIDC (no access keys)
+  contents: read
+  packages: write
+  id-token: write
 
 env:
   REGISTRY: ghcr.io
@@ -58,42 +58,42 @@ jobs:
     name: Build, Push, and Publish Image URIs
     runs-on: ubuntu-latest
 
-    # True only for the pushes/dispatches that should actually publish: a
-    # push to main or a release/** branch, or any manual workflow_dispatch.
-    # False for pull_request (any base branch) and for pushes to
-    # feature/**/bugfix/** branches - those still get the build steps below
-    # (fast Dockerfile-builds-cleanly feedback), just never the
-    # login/push/AWS/SSM steps, which are gated on this below. This is what
-    # stops an ordinary PR from silently overwriting the production SSM
-    # image pointer.
+
+
+
+
+
+
+
+
     env:
       PUBLISH: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))) }}
 
     steps:
-      # 1. Checkout Repository
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Docker Buildx
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Extract Git Commit SHA (short) and store it for later steps
+
       - name: Extract short Git commit SHA
         run: echo "GIT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 
-      # GHCR/Docker image references must be all-lowercase, but
-      # github.repository preserves the repository's actual casing - this
-      # normalizes it once, up front, for every tag built below.
+
+
+
       - name: Normalize image repository path to lowercase
         run: echo "IMAGE_REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
-      # 4. Login to GitHub Container Registry
-      # Uses the automatically issued GITHUB_TOKEN - no personal access
-      # token or stored secret required. This is what the packages: write
-      # permission above actually authorizes. Skipped entirely when not
-      # publishing - pulling public base images for the build below needs
-      # no registry auth at all.
+
+
+
+
+
+
       - name: Log in to GitHub Container Registry
         if: env.PUBLISH == 'true'
         uses: docker/login-action@v3
@@ -102,10 +102,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Build Frontend Docker Image
-      # Always runs, including on pull requests and feature/bugfix pushes -
-      # this is the fast feedback that a Dockerfile change didn't break the
-      # build, without ever pushing anything anywhere.
+
+
+
+
       - name: Build frontend image
         run: |
           docker buildx build \
@@ -114,12 +114,12 @@ jobs:
             --load \
             project/frontend
 
-      # 6. Push Frontend Image
+
       - name: Push frontend image
         if: env.PUBLISH == 'true'
         run: docker push "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA"
 
-      # 7. Build Backend Docker Image
+
       - name: Build backend image
         run: |
           docker buildx build \
@@ -128,16 +128,16 @@ jobs:
             --load \
             project/backend
 
-      # 8. Push Backend Image
+
       - name: Push backend image
         if: env.PUBLISH == 'true'
         run: docker push "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA"
 
-      # 9. Authenticate to AWS using GitHub OIDC - no AWS access keys exist
-      # anywhere in this workflow. This exchanges a short-lived GitHub JWT
-      # for temporary AWS credentials by assuming the existing IAM role.
-      # Skipped when not publishing - a PR build has no reason to touch AWS
-      # at all.
+
+
+
+
+
       - name: Configure AWS credentials (OIDC)
         if: env.PUBLISH == 'true'
         uses: aws-actions/configure-aws-credentials@v4
@@ -145,13 +145,13 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 10. Update AWS Systems Manager Parameter Store
-      # Overwrites the existing parameters with the image URIs just pushed
-      # above - this is the handoff point the Terraform ECS module's
-      # aws_ssm_parameter data source reads from at the next plan/apply.
-      # This is the step a naive "run on every PR" setup would have made
-      # dangerous: it repoints the LIVE production image, with no relation
-      # to whether the infra pipeline's own approval gate has run.
+
+
+
+
+
+
+
       - name: Update SSM parameter - frontend image URI
         if: env.PUBLISH == 'true'
         run: |
@@ -170,23 +170,23 @@ jobs:
             --type String \
             --overwrite
 
-      # 10b. Second account sync (optional, off until configured)
-      # Mirrors the same image URIs into a second AWS account's SSM
-      # Parameter Store - e.g. a colleague's account running its own copy
-      # of this infrastructure via live/multi. Entirely inert until the
-      # AWS_ROLE_ARN_MULTI repository variable is actually set; until then
-      # every step below is skipped and this job behaves exactly as it did
-      # before this account existed.
-      #
-      # This performs a SECOND, chained sts:AssumeRole - not a second OIDC
-      # federation. The target role's trust policy only trusts THIS role
-      # (GitHub-ImageBuild-SSM-Role in the dev account) as its principal,
-      # never GitHub OIDC directly, exactly mirroring the two-hop pattern
-      # Terragrunt's generated provider.tf already uses for real
-      # infrastructure. configure-aws-credentials does this automatically:
-      # given a role-to-assume input and credentials already active in the
-      # environment (the dev-account hop above), it calls sts:AssumeRole
-      # using those, rather than requesting a fresh OIDC token.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       - name: Configure AWS credentials for colleague account (second hop)
         if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
         uses: aws-actions/configure-aws-credentials@v4
@@ -194,13 +194,13 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN_MULTI }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # SSM is account-scoped, so the colleague account needs its own copy
-      # of both parameters at the SAME paths live/multi/us-east-1/ssm and
-      # ssm-backend already read from (/ecs/frontend-image-uri,
-      # /ecs/backend-image-uri) - reusing SSM_FRONTEND_PARAM/
-      # SSM_BACKEND_PARAM here is correct precisely because those are just
-      # path strings, identical in both accounts; only the credentials
-      # (and therefore which account they resolve in) differ.
+
+
+
+
+
+
+
       - name: Update colleague account SSM parameter - frontend image URI
         if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
         run: |
@@ -219,10 +219,10 @@ jobs:
             --type String \
             --overwrite
 
-      # 11a. Validation-only summary - the path every PR and feature/bugfix
-      # push actually takes. Makes it explicit in the job summary that
-      # nothing was pushed, so a reviewer never mistakes a green check for
-      # "this image is live."
+
+
+
+
       - name: Display build validation summary
         if: env.PUBLISH != 'true'
         run: |
@@ -233,7 +233,7 @@ jobs:
             echo "parameters were updated (event: \`${{ github.event_name }}\`, ref: \`${{ github.ref }}\`)."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # 11b. Display Final Image URIs
+
       - name: Display final image URIs
         if: env.PUBLISH == 'true'
         run: |

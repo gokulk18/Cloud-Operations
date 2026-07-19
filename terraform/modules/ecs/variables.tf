@@ -1,10 +1,10 @@
-# modules/ecs/variables.tf
-# -----------------------------------------------------------------------------
-# Inputs the ecs module needs. Every ID here (subnets, security group, target
-# group, IAM roles) comes from resources created in OTHER modules - this
-# module never creates or looks any of them up itself, it only consumes the
-# IDs it's given.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 variable "project_name" {
   description = "The name of the project. Used as a prefix on resource names and tags."

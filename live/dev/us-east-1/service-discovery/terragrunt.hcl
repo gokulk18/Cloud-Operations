@@ -1,9 +1,9 @@
-# live/dev/us-east-1/service-discovery/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# NOT one of your 8 modules - added because the ecs module (unmodified)
-# has a required service_connect_namespace_arn input with no default.
-# Creates the Cloud Map namespace that input needs. No dependencies.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()

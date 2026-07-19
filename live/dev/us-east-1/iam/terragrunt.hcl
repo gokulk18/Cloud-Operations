@@ -1,13 +1,13 @@
-# live/dev/us-east-1/iam/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# Per the requested dependency list, IAM depends on VPC. The iam module's
-# own variables (project_name, environment only) never actually reference
-# any VPC output, so this dependency block exists purely to force
-# Terragrunt to run VPC before IAM during `run --all` - a valid use of
-# `dependency`, just not one that feeds any data through. If you'd rather
-# match the real project exactly (where IAM has no dependencies, since
-# it's a global service), delete this block and the vpc_id line.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()

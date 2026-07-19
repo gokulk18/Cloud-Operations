@@ -1,8 +1,8 @@
-# modules/iam/outputs.tf
-# -----------------------------------------------------------------------------
-# Exposes the role ARNs/names the future ECS Task Definition needs, and
-# anything that later attaches additional permissions to the Task Role.
-# -----------------------------------------------------------------------------
+
+
+
+
+
 
 output "task_execution_role_arn" {
   description = "The ARN of the ECS Task Execution Role. Used as the Task Definition's execution_role_arn."

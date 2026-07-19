@@ -1,26 +1,26 @@
-# modules/ecs/main.tf
-# -----------------------------------------------------------------------------
-# Creates the ECS Cluster, Fargate Task Definition, and ECS Service that
-# actually run the application container. The service runs in the existing
-# private subnets, uses the existing ECS security group, and registers its
-# tasks into the existing ALB target group - none of which this module
-# creates itself.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
-# Used to tell the awslogs log driver which region to ship log events to,
-# without needing a separate region variable - the provider already knows.
+
+
 data "aws_region" "current" {}
 
-# -----------------------------------------------------------------------------
-# Resource: CloudWatch Log Group
-# -----------------------------------------------------------------------------
-# The awslogs log driver requires its target log group to already exist -
-# creating it explicitly here (rather than relying on the task creating its
-# own at runtime) keeps retention and tagging managed by Terraform.
+
+
+
+
+
+
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/${local.name_prefix}"
   retention_in_days = 30
@@ -33,14 +33,14 @@ resource "aws_cloudwatch_log_group" "ecs" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Resource: ECS Cluster
-# -----------------------------------------------------------------------------
-# A logical grouping the Fargate tasks run under. Deliberately minimal - no
-# capacity providers, no ECS Exec configuration. Container Insights is
-# enabled because the cloudwatch module's running-task-count alarm reads
-# from the ECS/ContainerInsights metric namespace, which only publishes
-# data when this setting is on.
+
+
+
+
+
+
+
+
 resource "aws_ecs_cluster" "main" {
   name = "${local.name_prefix}-cluster"
 
@@ -57,11 +57,11 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Resource: Fargate Task Definition
-# -----------------------------------------------------------------------------
-# The blueprint for a single running task: which image to run, how much
-# CPU/memory to reserve, which IAM roles to use, and how to ship logs.
+
+
+
+
+
 resource "aws_ecs_task_definition" "app" {
   family                   = "${local.name_prefix}-${var.container_name}"
   requires_compatibilities = ["FARGATE"]
@@ -104,14 +104,14 @@ resource "aws_ecs_task_definition" "app" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Resource: ECS Service
-# -----------------------------------------------------------------------------
-# Keeps the desired number of tasks running, places them in the private
-# subnets with no public IP, and (when target_group_arn is supplied)
-# registers them into the ALB target group. Also joins the shared Service
-# Connect namespace, which is how OTHER services (like the frontend calling
-# the backend) reach this one by a short name instead of an IP address.
+
+
+
+
+
+
+
+
 resource "aws_ecs_service" "app" {
   name             = "${local.name_prefix}-service"
   cluster          = aws_ecs_cluster.main.id
@@ -126,9 +126,9 @@ resource "aws_ecs_service" "app" {
     assign_public_ip = false
   }
 
-  # Only emitted when target_group_arn is actually set - internal services
-  # with no ALB routing (like the backend) skip this block entirely rather
-  # than registering with a target group that has nothing to do with them.
+
+
+
   dynamic "load_balancer" {
     for_each = var.target_group_arn != null ? [var.target_group_arn] : []
     content {
@@ -138,10 +138,10 @@ resource "aws_ecs_service" "app" {
     }
   }
 
-  # Registers this service in the shared namespace under
-  # service_connect_port_name, so other Service-Connect-enabled services can
-  # reach it at http://<service_connect_port_name>:<container_port> - no
-  # hardcoded IPs, no separate DNS records to manage by hand.
+
+
+
+
   service_connect_configuration {
     enabled   = true
     namespace = var.service_connect_namespace_arn

@@ -1,9 +1,9 @@
-# modules/cloudwatch/variables.tf
-# -----------------------------------------------------------------------------
-# Inputs the cloudwatch module needs. All four identifying values come from
-# resources created in OTHER modules (ecs and alb) - this module only
-# watches them, it never creates or modifies them.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
 
 variable "project_name" {
   description = "The name of the project. Used as a prefix on resource names and tags."

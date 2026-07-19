@@ -1,9 +1,9 @@
-# live/dev/us-east-1/ecs/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# Depends on VPC, Security, IAM, ALB exactly as requested, PLUS SSM
-# (image_uri - see the correction note at the top of this response) and
-# Service Discovery (the Service Connect namespace this module requires).
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()

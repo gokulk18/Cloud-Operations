@@ -1,10 +1,10 @@
-# live/dev/us-east-1/ecs-backend/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# The backend Flask API service - matching module "ecs_backend" in the real
-# (now-retired) terraform/main.tf. This was missing from the original
-# migration entirely. No target_group_arn - the ALB never routes to this
-# service directly, only the frontend does, over Service Connect.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()
@@ -63,9 +63,9 @@ dependency "service_discovery" {
 
 inputs = {
   project_name = local.common_vars.locals.project_name
-  # Matches the real project's "${var.environment}-backend" suffix, keeping
-  # this service's resource names (cluster, log group, service) distinct
-  # from the frontend's.
+
+
+
   environment = "${local.account_vars.locals.account_name}-backend"
 
   aws_region          = local.region_vars.locals.aws_region

@@ -1,10 +1,10 @@
-# live/dev/us-east-1/ssm-backend/terragrunt.hcl
-# -----------------------------------------------------------------------------
-# Reads the backend image URI - a separate instance of the same ssm module,
-# matching module "ssm_backend" in the real (now-retired) terraform/main.tf.
-# This was missing from the original migration; the backend ECS service
-# depends on it. No dependencies of its own.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 include "root" {
   path = find_in_parent_folders()

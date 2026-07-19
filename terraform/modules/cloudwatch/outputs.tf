@@ -1,9 +1,9 @@
-# modules/cloudwatch/outputs.tf
-# -----------------------------------------------------------------------------
-# Exposes the alarm names/ARNs for anything that integrates with this
-# module later - a future SNS notification phase would attach
-# alarm_actions using these ARNs.
-# -----------------------------------------------------------------------------
+
+
+
+
+
+
 
 output "running_task_alarm_name" {
   description = "The name of the running ECS task count alarm."
