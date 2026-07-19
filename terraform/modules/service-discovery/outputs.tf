@@ -1,9 +1,3 @@
-
-
-
-
-
-
 output "namespace_arn" {
   description = "The ARN of the Cloud Map HTTP namespace used for ECS Service Connect."
   value       = aws_service_discovery_http_namespace.internal.arn

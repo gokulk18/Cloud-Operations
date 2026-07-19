@@ -11,16 +11,6 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-
-
-
-
-
-
-
-
-
-
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -42,7 +32,6 @@ resource "aws_security_group" "ecs" {
   description = "Controls access to the ECS Fargate tasks - allows traffic only from the ALB"
   vpc_id      = var.vpc_id
 
-
   ingress {
     description     = "Allow application traffic from the ALB only"
     from_port       = var.application_port
@@ -50,9 +39,6 @@ resource "aws_security_group" "ecs" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
-
-
-
 
   ingress {
     description = "Allow internal service-to-service traffic (e.g. frontend to backend) via Service Connect"

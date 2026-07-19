@@ -18,18 +18,10 @@ from datetime import datetime, timezone
 import psutil
 from flask import Flask, jsonify, request
 
-
-
-
-
 API_PORT = int(os.environ.get("API_PORT", "5000"))
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
 APP_NAME = os.environ.get("APP_NAME", "Cloud Operations Dashboard")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
-
-
-
-
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -43,15 +35,9 @@ logger = logging.getLogger(APP_NAME)
 
 app = Flask(__name__)
 
-
-
-
-
-
 START_TIME = time.time()
 _request_count = 0
 _request_count_lock = threading.Lock()
-
 
 def _increment_request_count() -> int:
     """Thread-safe increment of the per-worker request counter."""
@@ -60,7 +46,6 @@ def _increment_request_count() -> int:
         _request_count += 1
         return _request_count
 
-
 def _format_uptime(seconds: float) -> str:
     """Render an uptime duration in seconds as a human-readable string."""
     seconds = int(seconds)
@@ -68,15 +53,10 @@ def _format_uptime(seconds: float) -> str:
     minutes, secs = divmod(remainder, 60)
     return f"{hours}h {minutes}m {secs}s"
 
-
-
-
-
 @app.before_request
 def _log_incoming_request():
     _increment_request_count()
     logger.info("Incoming request: %s %s", request.method, request.path)
-
 
 @app.after_request
 def _log_response(response):
@@ -88,26 +68,19 @@ def _log_response(response):
     )
     return response
 
-
 @app.errorhandler(404)
 def _not_found(_error):
     return jsonify(error="Not Found"), 404
-
 
 @app.errorhandler(Exception)
 def _handle_unexpected_error(error):
     logger.error("Unhandled exception: %s", error, exc_info=True)
     return jsonify(error="Internal Server Error"), 500
 
-
-
-
-
 @app.route("/")
 def root():
     """Basic liveness/identity endpoint."""
     return jsonify(application=APP_NAME, status="Running")
-
 
 @app.route("/health")
 def health():
@@ -128,7 +101,6 @@ def health():
         200,
     )
 
-
 @app.route("/info")
 def info():
     """Container/runtime metadata - useful for confirming which task/AZ
@@ -141,13 +113,11 @@ def info():
         request_count=_request_count,
     )
 
-
 @app.route("/time")
 def current_time():
     """Returns the current UTC time as tracked by the container."""
     now = datetime.now(timezone.utc)
     return jsonify(utc_time=now.isoformat(), unix_timestamp=int(now.timestamp()))
-
 
 @app.route("/metrics")
 def metrics():
@@ -158,7 +128,6 @@ def metrics():
         memory_usage=f"{psutil.virtual_memory().percent}%",
         request_count=_request_count,
     )
-
 
 if __name__ == "__main__":
 

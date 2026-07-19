@@ -1,8 +1,6 @@
-
 data "aws_availability_zones" "available" {
   state = "available"
 }
-
 
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -17,7 +15,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -28,7 +25,6 @@ resource "aws_internet_gateway" "main" {
     ManagedBy   = "Terraform"
   }
 }
-
 
 resource "aws_subnet" "public_1" {
   vpc_id                  = aws_vpc.main.id
@@ -58,7 +54,6 @@ resource "aws_subnet" "public_2" {
   }
 }
 
-
 resource "aws_subnet" "private_1" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.private_subnet_cidrs[0]
@@ -87,7 +82,6 @@ resource "aws_subnet" "private_2" {
   }
 }
 
-
 resource "aws_eip" "nat" {
   domain = "vpc"
 
@@ -98,7 +92,6 @@ resource "aws_eip" "nat" {
     ManagedBy   = "Terraform"
   }
 }
-
 
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
@@ -114,7 +107,6 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -126,13 +118,11 @@ resource "aws_route_table" "public" {
   }
 }
 
-
 resource "aws_route" "public_internet_access" {
   route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.main.id
 }
-
 
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
@@ -145,13 +135,11 @@ resource "aws_route_table" "private" {
   }
 }
 
-
 resource "aws_route" "private_nat_access" {
   route_table_id         = aws_route_table.private.id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.main.id
 }
-
 
 resource "aws_route_table_association" "public_1" {
   subnet_id      = aws_subnet.public_1.id

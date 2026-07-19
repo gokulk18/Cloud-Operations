@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 output "running_task_alarm_name" {
   description = "The name of the running ECS task count alarm."
   value       = aws_cloudwatch_metric_alarm.running_task_count.alarm_name

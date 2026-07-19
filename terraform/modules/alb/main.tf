@@ -1,8 +1,6 @@
-
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
-
 
 resource "aws_lb" "main" {
   name               = "${local.name_prefix}-alb"
@@ -23,7 +21,6 @@ resource "aws_lb" "main" {
     ManagedBy   = "Terraform"
   }
 }
-
 
 resource "aws_lb_target_group" "app" {
   name        = "${local.name_prefix}-tg"
@@ -49,7 +46,6 @@ resource "aws_lb_target_group" "app" {
     ManagedBy   = "Terraform"
   }
 }
-
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn

@@ -1,18 +1,6 @@
 name: Infrastructure Pipeline
 
-
-
-
-
-
-
-
-
 on:
-
-
-
-
 
   push:
     branches:
@@ -22,22 +10,12 @@ on:
       - "release/**"
     paths: &infra_paths
 
-
-
-
-
-
       - "terraform/**"
       - "live/**"
 
-
       - "!**/*.md"
 
-
-
       - ".github/workflows/terraform.yml"
-
-
 
   pull_request:
     branches:
@@ -57,9 +35,6 @@ on:
         options: [plan, apply, destroy]
         default: plan
 
-
-
-
 concurrency:
   group: terragrunt-${{ github.event.inputs.account || 'dev' }}-${{ github.ref }}
   cancel-in-progress: false
@@ -75,11 +50,6 @@ env:
 
 jobs:
 
-
-
-
-
-
   plan:
     name: Terragrunt Plan
     runs-on: ubuntu-latest
@@ -94,18 +64,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
-
-
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
           terraform_wrapper: false
-
-
-
 
       - name: Install Terragrunt
         run: |
@@ -113,12 +76,6 @@ jobs:
             "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
           chmod +x /usr/local/bin/terragrunt
           terragrunt --version
-
-
-
-
-
-
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -131,14 +88,6 @@ jobs:
 
       - name: Terragrunt run --all validate
         run: terragrunt run --all validate --non-interactive
-
-
-
-
-
-
-
-
 
       - name: Terragrunt run --all plan
         run: |
@@ -188,17 +137,6 @@ jobs:
               });
             }
 
-
-
-
-
-
-
-
-
-
-
-
   apply:
     name: Terragrunt Apply
     needs: plan
@@ -238,10 +176,6 @@ jobs:
 
       - name: Terragrunt run --all init
         run: terragrunt run --all init --non-interactive
-
-
-
-
 
       - name: Terragrunt run --all apply or destroy
         run: |

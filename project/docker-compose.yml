@@ -1,10 +1,5 @@
 version: "3.9"
 
-
-
-
-
-
 services:
   backend:
     build:
@@ -39,7 +34,6 @@ services:
       API_PORT: "3000"
       ENVIRONMENT: "production"
       APP_NAME: "Cloud Operations Dashboard"
-
 
       BACKEND_URL: "http://backend:5000"
       LOG_LEVEL: "info"

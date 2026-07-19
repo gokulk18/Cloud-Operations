@@ -1,24 +1,8 @@
-
-
-
-
-
-
-
-
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 
-
-
   ecs_resource_id = "service/${var.ecs_cluster_name}/${var.ecs_service_name}"
 }
-
-
-
-
-
-
 
 resource "aws_appautoscaling_target" "ecs" {
   service_namespace  = "ecs"
@@ -34,13 +18,6 @@ resource "aws_appautoscaling_target" "ecs" {
     ManagedBy   = "Terraform"
   }
 }
-
-
-
-
-
-
-
 
 resource "aws_appautoscaling_policy" "cpu" {
   name               = "${local.name_prefix}-ecs-cpu-target-tracking"

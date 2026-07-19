@@ -1,25 +1,8 @@
-
-
-
-
-
-
-
-
-
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
 
-
-
 data "aws_region" "current" {}
-
-
-
-
-
-
 
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/ecs/${local.name_prefix}"
@@ -32,14 +15,6 @@ resource "aws_cloudwatch_log_group" "ecs" {
     ManagedBy   = "Terraform"
   }
 }
-
-
-
-
-
-
-
-
 
 resource "aws_ecs_cluster" "main" {
   name = "${local.name_prefix}-cluster"
@@ -56,11 +31,6 @@ resource "aws_ecs_cluster" "main" {
     ManagedBy   = "Terraform"
   }
 }
-
-
-
-
-
 
 resource "aws_ecs_task_definition" "app" {
   family                   = "${local.name_prefix}-${var.container_name}"
@@ -104,14 +74,6 @@ resource "aws_ecs_task_definition" "app" {
   }
 }
 
-
-
-
-
-
-
-
-
 resource "aws_ecs_service" "app" {
   name             = "${local.name_prefix}-service"
   cluster          = aws_ecs_cluster.main.id
@@ -126,9 +88,6 @@ resource "aws_ecs_service" "app" {
     assign_public_ip = false
   }
 
-
-
-
   dynamic "load_balancer" {
     for_each = var.target_group_arn != null ? [var.target_group_arn] : []
     content {
@@ -137,10 +96,6 @@ resource "aws_ecs_service" "app" {
       container_port   = var.container_port
     }
   }
-
-
-
-
 
   service_connect_configuration {
     enabled   = true

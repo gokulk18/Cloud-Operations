@@ -1,29 +1,7 @@
-
-
-
-
-
-
-
-
-
-
 locals {
-
-
 
   common_vars = read_terragrunt_config(find_in_parent_folders("common.hcl"))
 }
-
-
-
-
-
-
-
-
-
-
 
 remote_state {
   backend = "s3"
@@ -38,34 +16,11 @@ remote_state {
     region  = local.common_vars.locals.state_region
     encrypt = true
 
-
-
-
-
-
-
     key = "${path_relative_to_include()}/terraform.tfstate"
-
-
-
-
 
     use_lockfile = true
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 generate "provider" {
   path      = "provider.tf"
@@ -94,10 +49,6 @@ generate "provider" {
 
     provider "aws" {
       region = var.aws_region
-
-
-
-
 
       assume_role {
         role_arn = var.deployment_role_arn

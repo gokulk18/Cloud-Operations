@@ -1,9 +1,3 @@
-
-
-
-
-
-
 output "task_execution_role_arn" {
   description = "The ARN of the ECS Task Execution Role. Used as the Task Definition's execution_role_arn."
   value       = aws_iam_role.task_execution.arn

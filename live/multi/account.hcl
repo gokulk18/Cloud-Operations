@@ -1,18 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 locals {
   account_name = "multi"
   account_id   = "416069842292"

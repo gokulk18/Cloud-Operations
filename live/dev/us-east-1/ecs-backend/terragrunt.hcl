@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 include "root" {
   path = find_in_parent_folders()
 }
@@ -63,8 +55,6 @@ dependency "service_discovery" {
 
 inputs = {
   project_name = local.common_vars.locals.project_name
-
-
 
   environment = "${local.account_vars.locals.account_name}-backend"
 

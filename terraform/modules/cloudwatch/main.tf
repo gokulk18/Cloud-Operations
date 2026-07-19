@@ -1,22 +1,6 @@
-
-
-
-
-
-
-
-
-
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
 }
-
-
-
-
-
-
-
 
 resource "aws_cloudwatch_metric_alarm" "running_task_count" {
   alarm_name          = "${local.name_prefix}-ecs-running-task-count"
@@ -42,14 +26,6 @@ resource "aws_cloudwatch_metric_alarm" "running_task_count" {
     ManagedBy   = "Terraform"
   }
 }
-
-
-
-
-
-
-
-
 
 resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   alarm_name          = "${local.name_prefix}-alb-5xx-errors"

@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 output "autoscaling_target_id" {
   description = "The resource ID of the Application Auto Scaling target (format: service/<cluster-name>/<service-name>)."
   value       = aws_appautoscaling_target.ecs.id

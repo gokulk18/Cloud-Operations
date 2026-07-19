@@ -2,13 +2,8 @@
 
 *
 
-
 const express = require('express');
 const path = require('path');
-
-
-
-
 
 const API_PORT = process.env.API_PORT || 3000;
 const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
@@ -39,7 +34,6 @@ function log(level, message, meta = {}) {
 const app = express();
 app.disable('x-powered-by');
 
-
 app.use((req, res, next) => {
   log('info', `Incoming request: ${req.method} ${req.path}`);
   res.on('finish', () => {
@@ -48,16 +42,11 @@ app.use((req, res, next) => {
   next();
 });
 
-
 app.use(express.static(path.join(__dirname, 'public')));
-
-
-
 
 app.get('/healthz', (_req, res) => {
   res.status(200).json({ status: 'healthy', service: 'frontend' });
 });
-
 
 async function proxyToBackend(backendPath, res) {
   try {
@@ -76,7 +65,6 @@ app.get('/api/health', (_req, res) => proxyToBackend('/health', res));
 app.get('/api/info', (_req, res) => proxyToBackend('/info', res));
 app.get('/api/time', (_req, res) => proxyToBackend('/time', res));
 app.get('/api/metrics', (_req, res) => proxyToBackend('/metrics', res));
-
 
 app.use((err, _req, res, _next) => {
   log('error', `Unhandled error: ${err.message}`);
