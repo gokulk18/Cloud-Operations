@@ -1,7 +1,5 @@
 'use strict';
 
-*
-
 const HEALTH_REFRESH_INTERVAL_MS = 10000;
 
 const $ = (id) => document.getElementById(id);
