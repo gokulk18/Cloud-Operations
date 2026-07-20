@@ -1,6 +1,6 @@
 'use strict';
 
-*
+// Minimal structured (JSON-line) logger - consistent with the backend's
 
 const express = require('express');
 const path = require('path');
@@ -12,8 +12,6 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'info').toLowerCase();
 
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug'];
-
-* Minimal structured (JSON-line) logger - consistent with the backend's
 
 function log(level, message, meta = {}) {
   const configuredIdx = LOG_LEVELS.indexOf(LOG_LEVEL);
