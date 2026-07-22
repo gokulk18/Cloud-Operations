@@ -1,0 +1,18 @@
+name: Build validation summary
+description: Adds the build-only validation summary to the workflow summary.
+inputs:
+  event-name:
+    required: true
+  ref:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        {
+          echo "### Build Validation Only"
+          echo ""
+          echo "Both Dockerfiles built successfully. No images were pushed and no SSM"
+          echo "parameters were updated (event: \`${{ inputs.event-name }}\`, ref: \`${{ inputs.ref }}\`)."
+        } >> "$GITHUB_STEP_SUMMARY"

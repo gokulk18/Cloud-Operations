@@ -1,0 +1,19 @@
+name: Build Docker image
+description: Builds and loads a Docker image with Buildx.
+inputs:
+  dockerfile:
+    required: true
+  context:
+    required: true
+  tag:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        docker buildx build \
+          --file "${{ inputs.dockerfile }}" \
+          --tag "${{ inputs.tag }}" \
+          --load \
+          "${{ inputs.context }}"

@@ -1,0 +1,9 @@
+name: Set image metadata
+description: Sets the short commit SHA and lowercase image repository path.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        echo "GIT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+        echo "IMAGE_REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"

@@ -1,0 +1,11 @@
+name: Initialize Terragrunt
+description: Initializes every Terragrunt unit.
+inputs:
+  working-directory:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terragrunt run --all init --non-interactive

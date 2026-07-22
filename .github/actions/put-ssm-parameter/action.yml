@@ -1,0 +1,17 @@
+name: Update SSM parameter
+description: Stores a string value in an existing-or-new SSM parameter.
+inputs:
+  name:
+    required: true
+  value:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        aws ssm put-parameter \
+          --name "${{ inputs.name }}" \
+          --value "${{ inputs.value }}" \
+          --type String \
+          --overwrite

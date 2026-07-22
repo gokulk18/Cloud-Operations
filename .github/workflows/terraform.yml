@@ -71,11 +71,9 @@ jobs:
           terraform_wrapper: false
 
       - name: Install Terragrunt
-        run: |
-          curl -sL -o /usr/local/bin/terragrunt \
-            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
-          chmod +x /usr/local/bin/terragrunt
-          terragrunt --version
+        uses: ./.github/actions/setup-terragrunt
+        with:
+          version: ${{ env.TERRAGRUNT_VERSION }}
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -84,58 +82,27 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terragrunt run --all init
-        run: terragrunt run --all init --non-interactive
+        uses: ./.github/actions/terragrunt-init
+        with:
+          working-directory: live/${{ github.event.inputs.account || 'dev' }}/us-east-1
 
       - name: Terragrunt run --all validate
-        run: terragrunt run --all validate --non-interactive
+        uses: ./.github/actions/terragrunt-validate
+        with:
+          working-directory: live/${{ github.event.inputs.account || 'dev' }}/us-east-1
 
       - name: Terragrunt run --all plan
-        run: |
-          set -o pipefail
-          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
-            terragrunt run --all --non-interactive -- plan -destroy 2>&1 | tee plan_output.txt
-          else
-            terragrunt run --all plan --non-interactive 2>&1 | tee plan_output.txt
-          fi
+        uses: ./.github/actions/terragrunt-plan
+        with:
+          destroy: ${{ github.event.inputs.action == 'destroy' }}
+          working-directory: live/${{ github.event.inputs.account || 'dev' }}/us-east-1
 
       - name: Comment plan on pull request
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: ./.github/actions/comment-terragrunt-plan
         with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- terragrunt-plan-comment -->';
-            const maxLength = 60000;
-
-            let planText = fs.readFileSync('live/dev/us-east-1/plan_output.txt', 'utf8');
-            if (planText.length > maxLength) {
-              planText = planText.substring(0, maxLength) + '\n... (truncated)';
-            }
-
-            const body = `${marker}\n### Terragrunt Plan (dev)\n\n\`\`\`\n${planText}\n\`\`\``;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find((c) => c.body.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
+          plan-file: live/dev/us-east-1/plan_output.txt
+          account: dev
 
   apply:
     name: Terragrunt Apply
@@ -162,11 +129,9 @@ jobs:
           terraform_wrapper: false
 
       - name: Install Terragrunt
-        run: |
-          curl -sL -o /usr/local/bin/terragrunt \
-            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64"
-          chmod +x /usr/local/bin/terragrunt
-          terragrunt --version
+        uses: ./.github/actions/setup-terragrunt
+        with:
+          version: ${{ env.TERRAGRUNT_VERSION }}
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -175,16 +140,18 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terragrunt run --all init
-        run: terragrunt run --all init --non-interactive
+        uses: ./.github/actions/terragrunt-init
+        with:
+          working-directory: live/${{ github.event.inputs.account || 'dev' }}/us-east-1
 
       - name: Terragrunt run --all apply or destroy
-        run: |
-          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
-            terragrunt run --all destroy --non-interactive
-          else
-            terragrunt run --all apply --non-interactive
-          fi
+        uses: ./.github/actions/terragrunt-apply
+        with:
+          destroy: ${{ github.event.inputs.action == 'destroy' }}
+          working-directory: live/${{ github.event.inputs.account || 'dev' }}/us-east-1
 
       - name: Display outputs
         if: github.event.inputs.action != 'destroy'
-        run: terragrunt run --all output --non-interactive
+        uses: ./.github/actions/terragrunt-output
+        with:
+          working-directory: live/${{ github.event.inputs.account || 'dev' }}/us-east-1

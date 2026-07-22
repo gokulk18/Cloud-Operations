@@ -1,0 +1,11 @@
+name: Display Terragrunt outputs
+description: Displays outputs from every Terragrunt unit.
+inputs:
+  working-directory:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terragrunt run --all output --non-interactive

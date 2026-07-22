@@ -52,11 +52,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract short Git commit SHA
-        run: echo "GIT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-
-      - name: Normalize image repository path to lowercase
-        run: echo "IMAGE_REPO=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+      - name: Set image metadata
+        uses: ./.github/actions/set-image-metadata
 
       - name: Log in to GitHub Container Registry
         if: env.PUBLISH == 'true'
@@ -67,28 +64,30 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build frontend image
-        run: |
-          docker buildx build \
-            --file project/frontend/Dockerfile \
-            --tag "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA" \
-            --load \
-            project/frontend
+        uses: ./.github/actions/build-docker-image
+        with:
+          dockerfile: project/frontend/Dockerfile
+          context: project/frontend
+          tag: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/frontend:${{ env.GIT_SHA }}
 
       - name: Push frontend image
         if: env.PUBLISH == 'true'
-        run: docker push "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA"
+        uses: ./.github/actions/push-docker-image
+        with:
+          tag: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/frontend:${{ env.GIT_SHA }}
 
       - name: Build backend image
-        run: |
-          docker buildx build \
-            --file project/backend/Dockerfile \
-            --tag "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA" \
-            --load \
-            project/backend
+        uses: ./.github/actions/build-docker-image
+        with:
+          dockerfile: project/backend/Dockerfile
+          context: project/backend
+          tag: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/backend:${{ env.GIT_SHA }}
 
       - name: Push backend image
         if: env.PUBLISH == 'true'
-        run: docker push "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA"
+        uses: ./.github/actions/push-docker-image
+        with:
+          tag: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/backend:${{ env.GIT_SHA }}
 
       - name: Configure AWS credentials (OIDC)
         if: env.PUBLISH == 'true'
@@ -99,21 +98,17 @@ jobs:
 
       - name: Update SSM parameter - frontend image URI
         if: env.PUBLISH == 'true'
-        run: |
-          aws ssm put-parameter \
-            --name "$SSM_FRONTEND_PARAM" \
-            --value "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA" \
-            --type String \
-            --overwrite
+        uses: ./.github/actions/put-ssm-parameter
+        with:
+          name: ${{ env.SSM_FRONTEND_PARAM }}
+          value: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/frontend:${{ env.GIT_SHA }}
 
       - name: Update SSM parameter - backend image URI
         if: env.PUBLISH == 'true'
-        run: |
-          aws ssm put-parameter \
-            --name "$SSM_BACKEND_PARAM" \
-            --value "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA" \
-            --type String \
-            --overwrite
+        uses: ./.github/actions/put-ssm-parameter
+        with:
+          name: ${{ env.SSM_BACKEND_PARAM }}
+          value: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/backend:${{ env.GIT_SHA }}
 
       - name: Configure AWS credentials for colleague account (second hop)
         if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
@@ -124,48 +119,30 @@ jobs:
 
       - name: Update colleague account SSM parameter - frontend image URI
         if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
-        run: |
-          aws ssm put-parameter \
-            --name "$SSM_FRONTEND_PARAM" \
-            --value "$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA" \
-            --type String \
-            --overwrite
+        uses: ./.github/actions/put-ssm-parameter
+        with:
+          name: ${{ env.SSM_FRONTEND_PARAM }}
+          value: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/frontend:${{ env.GIT_SHA }}
 
       - name: Update colleague account SSM parameter - backend image URI
         if: env.PUBLISH == 'true' && vars.AWS_ROLE_ARN_MULTI != ''
-        run: |
-          aws ssm put-parameter \
-            --name "$SSM_BACKEND_PARAM" \
-            --value "$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA" \
-            --type String \
-            --overwrite
+        uses: ./.github/actions/put-ssm-parameter
+        with:
+          name: ${{ env.SSM_BACKEND_PARAM }}
+          value: ${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}/backend:${{ env.GIT_SHA }}
 
       - name: Display build validation summary
         if: env.PUBLISH != 'true'
-        run: |
-          {
-            echo "### Build Validation Only"
-            echo ""
-            echo "Both Dockerfiles built successfully. No images were pushed and no SSM"
-            echo "parameters were updated (event: \`${{ github.event_name }}\`, ref: \`${{ github.ref }}\`)."
-          } >> "$GITHUB_STEP_SUMMARY"
+        uses: ./.github/actions/build-validation-summary
+        with:
+          event-name: ${{ github.event_name }}
+          ref: ${{ github.ref }}
 
       - name: Display final image URIs
         if: env.PUBLISH == 'true'
-        run: |
-          echo "Frontend image: $REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA"
-          echo "Backend image:  $REGISTRY/$IMAGE_REPO/backend:$GIT_SHA"
-          {
-            echo "### Published Image URIs"
-            echo ""
-            echo "| Service  | Image URI |"
-            echo "|----------|-----------|"
-            echo "| Frontend | \`$REGISTRY/$IMAGE_REPO/frontend:$GIT_SHA\` |"
-            echo "| Backend  | \`$REGISTRY/$IMAGE_REPO/backend:$GIT_SHA\` |"
-            echo ""
-            if [ -n "${{ vars.AWS_ROLE_ARN_MULTI }}" ]; then
-              echo "Also synced to the colleague account's SSM parameters."
-            else
-              echo "Colleague-account sync skipped: \`AWS_ROLE_ARN_MULTI\` is not set."
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
+        uses: ./.github/actions/published-images-summary
+        with:
+          registry: ${{ env.REGISTRY }}
+          image-repo: ${{ env.IMAGE_REPO }}
+          git-sha: ${{ env.GIT_SHA }}
+          colleague-role-arn: ${{ vars.AWS_ROLE_ARN_MULTI }}

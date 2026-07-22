@@ -1,0 +1,11 @@
+name: Validate Terragrunt
+description: Validates every Terragrunt unit.
+inputs:
+  working-directory:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: terragrunt run --all validate --non-interactive

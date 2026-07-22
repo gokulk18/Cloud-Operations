@@ -1,0 +1,32 @@
+name: Published images summary
+description: Displays and summarizes the published image URIs.
+inputs:
+  registry:
+    required: true
+  image-repo:
+    required: true
+  git-sha:
+    required: true
+  colleague-role-arn:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        echo "Frontend image: ${{ inputs.registry }}/${{ inputs.image-repo }}/frontend:${{ inputs.git-sha }}"
+        echo "Backend image:  ${{ inputs.registry }}/${{ inputs.image-repo }}/backend:${{ inputs.git-sha }}"
+        {
+          echo "### Published Image URIs"
+          echo ""
+          echo "| Service  | Image URI |"
+          echo "|----------|-----------|"
+          echo "| Frontend | \`${{ inputs.registry }}/${{ inputs.image-repo }}/frontend:${{ inputs.git-sha }}\` |"
+          echo "| Backend  | \`${{ inputs.registry }}/${{ inputs.image-repo }}/backend:${{ inputs.git-sha }}\` |"
+          echo ""
+          if [ -n "${{ inputs.colleague-role-arn }}" ]; then
+            echo "Also synced to the colleague account's SSM parameters."
+          else
+            echo "Colleague-account sync skipped: \`AWS_ROLE_ARN_MULTI\` is not set."
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"

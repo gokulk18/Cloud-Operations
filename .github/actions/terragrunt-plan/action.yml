@@ -1,0 +1,19 @@
+name: Plan Terragrunt
+description: Runs a normal or destroy Terragrunt plan and writes plan_output.txt.
+inputs:
+  destroy:
+    required: true
+  working-directory:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -o pipefail
+        if [ "${{ inputs.destroy }}" = "true" ]; then
+          terragrunt run --all --non-interactive -- plan -destroy 2>&1 | tee plan_output.txt
+        else
+          terragrunt run --all plan --non-interactive 2>&1 | tee plan_output.txt
+        fi

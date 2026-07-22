@@ -1,0 +1,14 @@
+name: Set up Terragrunt
+description: Installs the requested Terragrunt release.
+inputs:
+  version:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        curl -sL -o /usr/local/bin/terragrunt \
+          "https://github.com/gruntwork-io/terragrunt/releases/download/v${{ inputs.version }}/terragrunt_linux_amd64"
+        chmod +x /usr/local/bin/terragrunt
+        terragrunt --version
